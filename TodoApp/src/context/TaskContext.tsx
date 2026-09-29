@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { NewTask, Task } from '../types';
 import {
   createTaskRequest,
@@ -6,6 +7,7 @@ import {
   fetchTasksRequest,
   updateTaskRequest,
 } from '../api/taskApi';
+import { getErrorMessage, isSessionExpired } from '../utils/errors';
 import { useAuth } from './AuthContext';
 
 interface TaskContextValue {
@@ -29,26 +31,45 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   userIdRef.current = user?.id;
   const toggling = useRef(new Set<string>());
 
-  // Clear the list when the user changes (logout / another account logs in)
-  useEffect(() => {
-    requestGen.current += 1;
-    setTasks([]);
-    setLoading(false);
-  }, [user?.id]);
-
   // Errors are thrown so the screen can show a message (Alert) to the user.
   const fetchTasks = async () => {
     const gen = ++requestGen.current;
     const owner = userIdRef.current;
+    if (!owner) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await fetchTasksRequest();
       if (gen !== requestGen.current || userIdRef.current !== owner) return;
       setTasks(data);
+    } catch (err) {
+      if (gen !== requestGen.current || userIdRef.current !== owner) return;
+      throw err;
     } finally {
       if (gen === requestGen.current) setLoading(false);
     }
   };
+
+  // Load this user's tasks after login. Fetching here, after the user id is
+  // set, keeps the response. A fetch started from the screen was cancelled
+  // by the logout/login reset, so the list stayed empty until a manual refresh.
+  useEffect(() => {
+    if (!user?.id) {
+      requestGen.current += 1;
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+    fetchTasks().catch((err) => {
+      if (isSessionExpired(err)) return;
+      Alert.alert('Could not load tasks', getErrorMessage(err));
+    });
+    // fetchTasks is recreated each render and only uses refs plus setState.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const addTask = async (task: NewTask) => {
     const owner = userIdRef.current;

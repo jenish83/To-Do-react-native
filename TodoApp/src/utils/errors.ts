@@ -13,5 +13,6 @@ export function getErrorMessage(err: unknown): string {
     // No reply at all: server down, wrong IP, no internet
     if (!err.response) return 'Cannot reach the server. Check that the backend is running.';
   }
+  if (err instanceof Error && err.message) return err.message;
   return 'Something went wrong. Please try again.';
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InputField from '../components/InputField';
 import AppButton from '../components/AppButton';
@@ -27,7 +27,12 @@ export default function LoginScreen({ onGoToRegister }: { onGoToRegister: () => 
     try {
       await login(email, password); // on success, App.tsx switches to the Home screen
     } catch (err) {
-      Alert.alert('Login failed', getErrorMessage(err));
+      const message = getErrorMessage(err);
+      if (/email/i.test(message) && !/password/i.test(message)) {
+        setErrors((prev) => ({ ...prev, email: message }));
+      } else {
+        Alert.alert('Login failed', message);
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +47,7 @@ export default function LoginScreen({ onGoToRegister }: { onGoToRegister: () => 
           { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
         ]}
         keyboardShouldPersistTaps="handled">
-        <Text style={styles.logo}>✔️</Text>
+        <Image source={require('../assets/todo-app-logo.png')} style={styles.logo} />
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.subtitle}>Log in to manage your tasks</Text>
 
@@ -80,7 +85,7 @@ export default function LoginScreen({ onGoToRegister }: { onGoToRegister: () => 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  logo: { fontSize: 48, textAlign: 'center', marginBottom: 8 },
+  logo: { width: 96, height: 96, alignSelf: 'center', marginBottom: 8 },
   title: { fontSize: 26, fontWeight: '800', color: colors.text, textAlign: 'center' },
   subtitle: { fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 28 },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },

@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   RefreshControl,
   StatusBar,
   StyleSheet,
@@ -52,12 +53,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Load tasks once when the screen opens
-  useEffect(() => {
-    loadTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Apply filter + sort. useMemo avoids recalculating on every render.
   const visibleTasks = useMemo(() => sortTasks(filterTasks(tasks, filter), sort), [tasks, filter, sort]);
 
@@ -86,6 +81,7 @@ export default function HomeScreen() {
       <StatusBar barStyle={modalVisible ? 'dark-content' : 'light-content'} />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Image source={require('../assets/todo-app-logo.png')} style={styles.headerLogo} />
         <View style={{ flex: 1 }}>
           <Text style={styles.heading}>My Tasks</Text>
           <Text style={styles.sub} numberOfLines={1}>
@@ -152,6 +148,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     marginBottom: 12,
   },
+  headerLogo: { width: 44, height: 44, borderRadius: 12, marginRight: 12 },
   heading: { fontSize: 24, fontWeight: '800', color: '#fff' },
   sub: { fontSize: 13, color: '#D9D9FF', marginTop: 2 },
   logout: { color: '#fff', fontWeight: '700', marginLeft: 12 },

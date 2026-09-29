@@ -1,8 +1,34 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { assertDeliverableEmail } = require('../utils/validateEmailDomain');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Format check, then a DNS lookup so made-up domains like ujfhwj.com are rejected.
+async function rejectUndeliverableEmail(res, email) {
+  let domainError;
+  try {
+    domainError = await assertDeliverableEmail(email);
+  } catch (err) {
+    if (
+      err.code === 'ETIMEOUT' ||
+      err.code === 'ESERVFAIL' ||
+      err.code === 'EREFUSED' ||
+      err.code === 'ECONNREFUSED'
+    ) {
+      res.status(503).json({ message: 'Could not verify this email domain. Please try again.' });
+      return true;
+    }
+    throw err;
+  }
+
+  if (domainError) {
+    res.status(400).json({ message: domainError });
+    return true;
+  }
+  return false;
+}
 
 // Creates a signed token that contains the user's id
 function signToken(userId) {
@@ -20,6 +46,7 @@ exports.register = async (req, res, next) => {
     if (!email || !EMAIL_REGEX.test(email)) {
       return res.status(400).json({ message: 'Please enter a valid email' });
     }
+    if (await rejectUndeliverableEmail(res, email)) return;
     if (!password || password.length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
@@ -49,6 +76,10 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: 'Please enter a valid email' });
+    }
+    if (await rejectUndeliverableEmail(res, email)) return;
 
     // password is select:false, so ask for it explicitly
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
