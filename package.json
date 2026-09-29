@@ -1,0 +1,12 @@
+{
+  "name": "todo-app",
+  "private": true,
+  "description": "Root scripts so Render can install and start the API in backend/",
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "start": "npm start --prefix backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
